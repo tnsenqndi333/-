@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUN 강화 기댓값 계산기</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1e1b4b 0%, #581c87 50%, #1e1b4b 100%);
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        
+        @media (min-width: 768px) {
+            body {
+                padding: 2rem;
+            }
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 1rem;
+            padding: 1rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        @media (min-width: 768px) {
+            .container {
+                padding: 2rem;
+            }
+        }
+        
+        h1 {
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        @media (min-width: 768px) {
+            h1 {
+                font-size: 2rem;
+                margin-bottom: 2rem;
+                gap: 0.75rem;
+            }
+        }
+        
+        h1 svg {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+        
+        @media (min-width: 768px) {
+            h1 svg {
+                width: 32px;
+                height: 32px;
+            }
+        }
+        
+        .info-box {
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: #e9d5ff;
+            font-size: 0.8rem;
+            line-height: 1.6;
+        }
+        
+        @media (min-width: 768px) {
+            .info-box {
+                font-size: 0.875rem;
+            }
+        }
+        
+        .info-box strong {
+            color: #f3e8ff;
+        }
+        
+        .target-selector {
+            background: rgba(96, 165, 250, 0.2);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .target-selector label {
+            color: #dbeafe;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .target-selector select {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        
+        .target-selector select:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3);
+        }
+        
+        .target-selector select option {
+            background: #1e1b4b;
+            color: white;
+        }
+        
+        .input-group {
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        @media (min-width: 768px) {
+            .input-group {
+                flex-direction: row;
+                align-items: center;
+                gap: 1rem;
+            }
+        }
+        
+        .input-group label {
+            color: white;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+        }
+        
+        @media (min-width: 768px) {
+            .input-group label {
+                min-width: 220px;
+                font-size: 1rem;
+            }
+        }
+        
+        .input-group .rate {
+            color: #c084fc;
+            font-size: 0.875rem;
+        }
+        
+        .input-group.stage-9-plus .rate {
+            color: #fbbf24;
+        }
+        
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+        
+        .input-group input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+        
+        @media (min-width: 768px) {
+            .input-group input {
+                padding: 0.5rem 1rem;
+            }
+        }
+        
+        .input-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #a855f7;
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3);
+        }
+        
+        .unit {
+            color: white;
+            font-weight: 500;
+        }
+        
+        .results {
+            margin-top: 2rem;
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(236, 72, 153, 0.3) 100%);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        @media (min-width: 768px) {
+            .result-card {
+                padding: 1.5rem;
+            }
+        }
+        
+        .result-card h2 {
+            color: white;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        
+        @media (min-width: 768px) {
+            .result-card h2 {
+                font-size: 1.5rem;
+            }
+        }
+        
+        .result-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0.75rem 0;
+        }
+        
+        @media (min-width: 640px) {
+            .result-row {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+        
+        .result-row:not(:last-child) {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .result-label {
+            color: #e9d5ff;
+            font-size: 0.95rem;
+        }
+        
+        .result-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: white;
+            text-align: left;
+        }
+        
+        @media (min-width: 640px) {
+            .result-value {
+                font-size: 1.5rem;
+                text-align: right;
+            }
+        }
+        
+        .result-sub {
+            font-size: 0.875rem;
+            color: #d8b4fe;
+        }
+        
+        .highlight-box {
+            background: rgba(234, 179, 8, 0.2);
+            border: 1px solid rgba(234, 179, 8, 0.3);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 0.75rem;
+        }
+        
+        .highlight-box .result-label {
+            color: #fef3c7;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        @media (min-width: 768px) {
+            .highlight-box .result-label {
+                font-size: 1.125rem;
+            }
+        }
+        
+        .highlight-box .result-sub {
+            color: rgba(254, 243, 199, 0.7);
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+        
+        .highlight-box .result-value {
+            font-size: 1.5rem;
+            color: #fde047;
+        }
+        
+        @media (min-width: 768px) {
+            .highlight-box .result-value {
+                font-size: 2rem;
+            }
+        }
+        
+        .detail-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 1rem;
+            padding: 1rem;
+        }
+        
+        @media (min-width: 768px) {
+            .detail-card {
+                padding: 1.5rem;
+            }
+        }
+        
+        .detail-card h3 {
+            color: white;
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+        }
+        
+        @media (min-width: 768px) {
+            .detail-card h3 {
+                font-size: 1.25rem;
+            }
+        }
+        
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+        
+        @media (min-width: 768px) {
+            table {
+                font-size: 0.875rem;
+            }
+        }
+        
+        th {
+            color: #e9d5ff;
+            text-align: left;
+            padding: 0.5rem 0.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            white-space: nowrap;
+        }
+        
+        @media (min-width: 768px) {
+            th {
+                padding: 0.75rem;
+            }
+        }
+        
+        th:not(:first-child) {
+            text-align: right;
+        }
+        
+        td {
+            color: white;
+            padding: 0.5rem 0.25rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        @media (min-width: 768px) {
+            td {
+                padding: 0.75rem;
+            }
+        }
+        
+        td:not(:first-child) {
+            text-align: right;
+        }
+        
+        .cost-contribution {
+            color: #fde047;
+            font-weight: 600;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            SUN 강화 기댓값 계산기
+        </h1>
+        
+        <div class="info-box">
+            <strong>1~8단계:</strong> 성공률 100%, 81%, 64%, 50%, 26%, 15%, 7% | 실패 시 1단계부터 다시 시작<br>
+            <strong>9~13단계:</strong> 성공률 5%, 4%, 3%, 2%, 1% | 실패해도 단계 유지 (하락 없음)<br>
+            <strong>9단계부터:</strong> 1회 시도당 (카드 가격 + 재료 비용) 소모<br>
+            <strong>💡 라이브팩 사용 시:</strong> 각 단계 재료값을 원래 0.1억으로 입력하세요
+        </div>
+        
+        <div class="target-selector">
+            <label for="targetStage">목표 강화 단계:</label>
+            <select id="targetStage">
+                <option value="8">8단계</option>
+                <option value="9">9단계</option>
+                <option value="10">10단계</option>
+                <option value="11">11단계</option>
+                <option value="12">12단계</option>
+                <option value="13">13단계</option>
+            </select>
+        </div>
+        
+        <div class="input-section">
+            <div class="input-group" data-stage="1">
+                <label>
+                    <span>1단계 → 2단계</span>
+                    <span class="rate">(100%)</span>
+                </label>
+                <div class="input-wrapper">
+                    <input type="number" id="cost1" placeholder="재료 비용 입력 (억)">
+                    <span class="unit">억</span>
+                </div>
+            </div>
+            
+            <div class="input-group" data-stage="2">
+                <label>
+                    <span>2단계 → 3단계</span>
+                    <span class="rate">(81%)</span>
+                </label>
+                <div class="input-wrapper">
+                    <input type="number" id="cost2" placeholder="재료 비용 입력 (억)">
+                    <span class="unit">억</span>
+                </div>
+            </div>
+            
+            <div class="input-group" data-stage="3">
+                <label>
+                    <span>3단계 → 4단계</span>
+                    <span class="rate">(64%)</span>
+                </label>
+                <div class="input-wrapper">
+                    <input type="number" id="cost3" placeholder="재료 비용 입력 (억)">
+                    <span class="unit">억</span>
+                </div>
+            </div>
+            
+            <div class="input-group" data-stage="4">
+                <label>
+                    <span>4단계 → 5단계</span>
+                    <span class="rate">(50%)</span>
+                </label>
+                <div class="input-wrapper">
+                    <input type="number" id="cost4" placeholder="재료 비용 입력 (억)">
+                    <span class="unit">억</span>
+                </div>
+            </div>
+            
+            <div class="input-group" data-stage="5">
+                <label>
+                    <span>5단계 → 6단계</span>
+                    <span class="rate">(26%)</span>
+                </label>
+                <div class="input-wrapper">
+                    <input type="number" id="cost5" placeholder="재료 비용 입력 (억)">
+                    <span class="unit">억</span>
+                </div>
+            </div>
+            
+            <div class="input-group" data-stage="6">
+                <label>
+                    <span>6단계 → 7단계</span>
+                    <span class="rate">(15%)</span>
+                </label>
+                <div class="input-wrapper">
+                    <input type="number" id="cost6" placeholder="재료 비용 입력 (억)">
+                    <span class="unit">억</span>
+                </div>
+            </div>
+            
+            <div class="input-group" data-stage="7">
+                <label>
+                    <span>7단계 → 8단계</span>
+                    <span class="rate">(7%)</span>
+                </label>
+                <div class="input-wrapper">
+                    <input type="number" id="cost7" placeholder="재료 비용 입력 (억)">
+                    <span class="unit">억</span>
+                </div>
+            </div>
+            
+            <div class="input-group stage-9-plus" data-stage="8">
+                <label>
+                    <span>8단계 → 9단계</span>
+                    <span class="rate">(5%, 단계유지)</span>
+                </label>
+                <div class="input-wrapper">
+                    <input type="number" id="card8" placeholder="8카 가격 (억)" style="flex: 1;">
+                    <span class="unit">+</span>
+                    <input type="number" id="cost8" placeholder="재료 (억)" style="flex: 1;">
+                    <span class="unit">억</span>
+                </div>
+            </div>
+            
+            <div class="input-group stage-9-plus" data-stage="9">
+                <label>
+                    <span>9단계 → 10단계</span>
+                    <span class="rate">(4%, 단계유지)</span>
+                </label>
+                <div class="input-wrapper">
+                    <input type="number" id="card9" placeholder="9카 가격 (억)" style="flex: 1;">
+                    <span class="unit">+</span>
+                    <input type="number" id="cost9" placeholder="재료 (억)" style="flex: 1;">
+                    <span class="unit">억</span>
+                </div>
+            </div>
+            
+            <div class="input-group stage-9-plus" data-stage="10">
+                <label>
+                    <span>10단계 → 11단계</span>
+                    <span class="rate">(3%, 단계유지)</span>
+                </label>
+                <div class="input-wrapper">
+                    <input type="number" id="card10" placeholder="10카 가격 (억)" style="flex: 1;">
+                    <span class="unit">+</span>
+                    <input type="number" id="cost10" placeholder="재료 (억)" style="flex: 1;">
+                    <span class="unit">억</span>
+                </div>
+            </div>
+            
+            <div class="input-group stage-9-plus" data-stage="11">
+                <label>
+                    <span>11단계 → 12단계</span>
+                    <span class="rate">(2%, 단계유지)</span>
+                </label>
+                <div class="input-wrapper">
+                    <input type="number" id="card11" placeholder="11카 가격 (억)" style="flex: 1;">
+                    <span class="unit">+</span>
+                    <input type="number" id="cost11" placeholder="재료 (억)" style="flex: 1;">
+                    <span class="unit">억</span>
+                </div>
+            </div>
+            
+            <div class="input-group stage-9-plus" data-stage="12">
+                <label>
+                    <span>12단계 → 13단계</span>
+                    <span class="rate">(1%, 단계유지)</span>
+                </label>
+                <div class="input-wrapper">
+                    <input type="number" id="card12" placeholder="12카 가격 (억)" style="flex: 1;">
+                    <span class="unit">+</span>
+                    <input type="number" id="cost12" placeholder="재료 (억)" style="flex: 1;">
+                    <span class="unit">억</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="results" class="results hidden">
+            <div class="result-card">
+                <h2>최종 결과 (<span id="targetStageDisplay"></span>단계)</h2>
+                <div class="result-row">
+                    <span class="result-label">전체 성공 확률:</span>
+                    <div class="result-value">
+                        <span id="successProb"></span>
+                        <div class="result-sub" id="successProbSub"></div>
+                    </div>
+                </div>
+                
+                <div class="result-row">
+                    <span class="result-label">총 기대 비용 (이론값):</span>
+                    <div class="result-value">
+                        <span id="totalCost"></span>
+                        <div class="result-sub" id="totalCostSub"></div>
+                    </div>
+                </div>
+                
+                <div class="highlight-box">
+                    <div class="result-row">
+                        <div>
+                            <div class="result-label">실제 기대 비용 (복구 반영):</div>
+                            <div class="result-sub">실패 시 복구 가능성 고려 (×0.88)</div>
+                        </div>
+                        <div class="result-value">
+                            <div id="adjustedCost"></div>
+                            <div class="result-sub" id="adjustedCostSub"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detail-card">
+                <h3>단계별 상세 분석</h3>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>단계</th>
+                                <th>재료비용</th>
+                                <th>성공률</th>
+                                <th>누적 비용</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const successRates = [1.00, 0.81, 0.64, 0.50, 0.26, 0.15, 0.07, 0.05, 0.04, 0.03, 0.02, 0.01];
+        const successRatesPercent = [100, 81, 64, 50, 26, 15, 7, 5, 4, 3, 2, 1];
+        
+        function formatCurrency(eok) {
+            if (eok >= 100000000) {
+                return (eok / 100000000).toFixed(2) + '경';
+            } else if (eok >= 10000) {
+                return (eok / 10000).toFixed(2) + '조';
+            } else {
+                return eok.toFixed(2) + '억';
+            }
+        }
+        
+        function updateInputVisibility() {
+            const targetStage = parseInt(document.getElementById('targetStage').value);
+            const inputGroups = document.querySelectorAll('.input-group');
+            
+            inputGroups.forEach(group => {
+                const stage = parseInt(group.getAttribute('data-stage'));
+                if (stage < targetStage) {
+                    group.style.display = 'flex';
+                } else {
+                    group.style.display = 'none';
+                }
+            });
+        }
+        
+        function calculate() {
+            const targetStage = parseInt(document.getElementById('targetStage').value);
+            
+            // 필요한 강화 횟수 = 목표단계 - 1
+            // 8단계 목표 = 7번 강화 (1→2, 2→3, ..., 7→8)
+            const numUpgrades = targetStage - 1;
+            
+            const costs = [];
+            
+            // 1~8단계: 재료비만 입력
+            for (let i = 0; i < Math.min(numUpgrades, 7); i++) {
+                const value = parseFloat(document.getElementById('cost' + (i+1)).value);
+                if (!value || value <= 0) return;
+                costs.push(value);
+            }
+            
+            // 9~13단계: 카드가격 + 재료비
+            if (targetStage >= 9) {
+                for (let i = 7; i < numUpgrades; i++) {
+                    const stageNum = i + 1; // 8, 9, 10, 11, 12
+                    const cardPrice = parseFloat(document.getElementById('card' + stageNum).value);
+                    const materialCost = parseFloat(document.getElementById('cost' + stageNum).value);
+                    if (!cardPrice || cardPrice <= 0 || !materialCost || materialCost <= 0) return;
+                    costs.push(cardPrice + materialCost);
+                }
+            }
+            
+            // cardCosts[i] = i번째 강화 완료 후 총 비용
+            // cardCosts[0] = 시작 (0억)
+            // cardCosts[7] = 7번 강화 완료 = 8단계 도달
+            const cardCosts = [0];
+            
+            // 1~8단계: 실패하면 1단계부터 다시
+            for (let i = 0; i < Math.min(numUpgrades, 7); i++) {
+                cardCosts[i + 1] = (cardCosts[i] + costs[i]) / successRates[i];
+            }
+            
+            // 9~13단계: 실패해도 단계 유지
+            if (targetStage >= 9) {
+                for (let i = 7; i < numUpgrades; i++) {
+                    cardCosts[i + 1] = cardCosts[i] + (costs[i] / successRates[i]);
+                }
+            }
+            
+            // 최종 비용 = numUpgrades번 강화 완료한 비용
+            const totalCost = cardCosts[numUpgrades];
+            const adjustedCost = totalCost * 0.88;
+            
+            // 전체 성공 확률
+            let totalSuccessProb = 1;
+            for (let i = 0; i < numUpgrades; i++) {
+                totalSuccessProb *= successRates[i];
+            }
+            
+            document.getElementById('targetStageDisplay').textContent = targetStage;
+            document.getElementById('successProb').textContent = (totalSuccessProb * 100).toFixed(6) + '%';
+            document.getElementById('successProbSub').textContent = '약 1/' + Math.round(1/totalSuccessProb).toLocaleString() + '번';
+            
+            document.getElementById('totalCost').textContent = formatCurrency(totalCost);
+            document.getElementById('totalCostSub').textContent = '(' + totalCost.toFixed(2) + '억)';
+            
+            document.getElementById('adjustedCost').textContent = formatCurrency(adjustedCost);
+            document.getElementById('adjustedCostSub').textContent = '(' + adjustedCost.toFixed(2) + '억)';
+            
+            // 테이블 표시
+            const tbody = document.getElementById('detailTable');
+            tbody.innerHTML = '';
+            
+            for (let i = 0; i < numUpgrades; i++) {
+                const row = tbody.insertRow();
+                const fromStage = i + 1;
+                const toStage = i + 2;
+                const stageInfo = i >= 7 ? ' (단계유지)' : '';
+                
+                row.innerHTML = '<td>' + fromStage + '→' + toStage + stageInfo + '</td>' +
+                    '<td>' + costs[i].toFixed(2) + '억</td>' +
+                    '<td>' + successRatesPercent[i] + '%</td>' +
+                    '<td class="cost-contribution">' + formatCurrency(cardCosts[i + 1]) + '</td>';
+            }
+            
+            document.getElementById('results').classList.remove('hidden');
+        }
+        
+        document.getElementById('targetStage').addEventListener('change', function() {
+            updateInputVisibility();
+            calculate();
+        });
+        
+        for (let i = 1; i <= 12; i++) {
+            document.getElementById('cost' + i).addEventListener('input', calculate);
+            if (i >= 8) {
+                document.getElementById('card' + i).addEventListener('input', calculate);
+            }
+        }
+        
+        updateInputVisibility();
+    </script>
+</body>
+</html>
